@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using CartService.BackgrounService;
 
 namespace CartService
 {
@@ -32,6 +33,7 @@ namespace CartService
 
             services.AddControllers();
             services.AddDbContext<CartDbContext>(opt => opt.UseInMemoryDatabase("CartDB"));
+            services.AddHostedService<ConsumerRabbitMQService>();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "CartService", Version = "v1" });

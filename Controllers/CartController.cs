@@ -11,6 +11,7 @@ using RabbitMQ.Client.Events;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Text;
+using System.Threading;
 
 namespace CartService.Controllers
 {
@@ -34,8 +35,6 @@ namespace CartService.Controllers
             cartObj.orderId = bodyData.orderId;
             cartObj.orderStatus = bodyData.orderStatus;
             cartObj.total = bodyData.total;
-            cartObj.productIds = bodyData.productIds;
-            cartObj.productPrices = bodyData.productPrices;
 
             var factory = new ConnectionFactory()
             {
@@ -63,6 +62,7 @@ namespace CartService.Controllers
             return JsonConvert.SerializeObject(cartObj);
         }
 
+        // GET to consume 'orders' queue
         [HttpGet]
         public async Task<ActionResult<List<string>>> Get()
         {
@@ -83,16 +83,18 @@ namespace CartService.Controllers
                                      arguments: null);
 
                 var consumer = new EventingBasicConsumer(channel);
+                // Consume from 'orders' queue
                 consumer.Received += (model, ea) =>
                 {
                     var body = ea.Body.ToArray();
                     var message = Encoding.UTF8.GetString(body);
                     queueItems.Add(message);
-                    // Store into In-Memeory DB
 
+                    // Store into In-Memeory DB
                     record = JsonConvert.DeserializeObject<Cart>(message);
                     Console.WriteLine(" [x] Received {0}", message);
                 };
+                Thread.Sleep(2000);
                 if (record.orderId != null)
                 {
                     _context.Add(record);
@@ -102,6 +104,7 @@ namespace CartService.Controllers
                 channel.BasicConsume(queue: "orders",
                                      autoAck: true,
                                      consumer: consumer);
+                
             }
 
             if (queueItems.Count == 0)
